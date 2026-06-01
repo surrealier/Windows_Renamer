@@ -5,7 +5,13 @@
 ### Batch-add a prefix/suffix to your files — right inside Windows Explorer.
 
 **Select files → hit <kbd>Alt</kbd>+<kbd>F2</kbd> → type → done.**
-No cloud. No telemetry. No 200 MB installer. Just one tiny script. 🪶
+No cloud. No telemetry. No 200 MB installer. Just one tiny tray app. 🪶
+
+<p>
+  <a href="https://github.com/surrealier/Windows_Renamer/releases/latest/download/win_rename.exe">
+    <img src="https://img.shields.io/badge/⬇%20Download-win__rename.exe-2ea44f?style=for-the-badge" alt="Download win_rename.exe">
+  </a>
+</p>
 
 <p>
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?logo=windows&logoColor=white" alt="Platform">
@@ -46,24 +52,29 @@ photo.jpg    →   2024_photo_final.jpg
 
 ---
 
-## 🚀 Quick start
+## 🚀 Quick Start
 
-```powershell
-# 1) Install AutoHotkey v2 (one time)
-winget install AutoHotkey.AutoHotkey
-```
+> **TL;DR — download the exe, double-click, press `Alt`+`F2` in Explorer.**
 
-```
-2) Double-click  win_rename.ahk   →  it sits quietly in your tray
-3) In Explorer, select your files
-4) Press  Alt + F2
-5) Type a prefix / suffix  →  check the preview  →  Apply ✅
-```
+### ⚡ Option A — Download & run · *no install*
 
-That's the whole thing. Seriously.
+#### **1.** ⬇️ Grab **[`win_rename.exe`](https://github.com/surrealier/Windows_Renamer/releases/latest/download/win_rename.exe)** from the latest release
+#### **2.** Double-click it → it lives in your tray 🟢
+#### **3.** In Explorer, **select files** → press **`Alt`+`F2`**
+#### **4.** Type a **prefix / suffix**, check the preview, hit **Apply** ✅
 
-<!-- 👉 Drop a screenshot of the dialog here. Suggested path: docs/dialog.png -->
+*No AutoHotkey. No setup. Nothing to clone.*
+
+### 🧩 Option B — Run the script
+
+Prefer the raw `.ahk`? You just need AutoHotkey v2 — a normal program installed **once, system-wide (not per-folder, not inside the repo)**:
+
+#### **1.** `winget install AutoHotkey.AutoHotkey`  *(run anywhere, one time)*
+#### **2.** Double-click **`win_rename.ahk`**
+#### **3.** Same as above → **select files → `Alt`+`F2` → type → Apply** ✅
+
 <div align="center">
+  <!-- 👉 Drop a screenshot of the dialog here. Suggested path: docs/dialog.png -->
   <img src="docs/dialog.png" alt="win_rename dialog" width="520">
 </div>
 
@@ -77,7 +88,7 @@ That's the whole thing. Seriously.
 - 🪟 **Windows 11 tab-aware** — reads the selection from the *active* Explorer tab, not a random one
 - 🗂️ **Files *and* folders**
 - ⌨️ **Context-smart hotkey** — `Alt+F2` only fires in Explorer/Desktop; everywhere else the key behaves normally
-- 🪶 **Featherweight** — a single `.ahk` file, no background bloat, runs from the tray
+- 🪶 **Featherweight** — a single tray app, no background bloat
 
 ---
 
@@ -110,12 +121,12 @@ Case-only renames (`a.txt → A.txt`) and cyclic swaps are handled via temporary
 </details>
 
 <details>
-<summary>📦 <b>Build a standalone .exe</b> (run without installing AutoHotkey)</summary>
+<summary>📦 <b>Build the .exe yourself</b> (optional — a prebuilt one is in <a href="https://github.com/surrealier/Windows_Renamer/releases">Releases</a>)</summary>
 
 <br>
 
 ```powershell
-& "C:\Program Files\AutoHotkey\Compiler\Ahk2Exe.exe" `
+& "<path-to>\Ahk2Exe.exe" `
   /in  "win_rename.ahk" `
   /out "win_rename.exe" `
   /base "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe"
@@ -130,9 +141,10 @@ Case-only renames (`a.txt → A.txt`) and cyclic swaps are handled via temporary
 
 <br>
 
-- **Don't run as admin.** If the script is elevated while Explorer isn't (the normal case), Windows hides the selection from it and you'll get an empty list. Renames in protected folders (Program Files, Windows, …) show up as per-file *"Access Denied"*.
+- **Don't run as admin.** If the app is elevated while Explorer isn't (the normal case), Windows hides the selection from it and you'll get an empty list. Renames in protected folders (Program Files, Windows, …) show up as per-file *"Access Denied"*.
 - **Dotfiles** (`.gitignore`) are treated as extension-only, so affixes are prepended: `2024__final.gitignore`. The preview shows exactly what will happen.
 - **Laptop F-row** in media mode? Use `Fn`+`Alt`+`F2`, or flip the firmware (BIOS) function-key setting.
+- **SmartScreen** may warn on the unsigned `.exe` the first time → *More info → Run anyway* (or use Option B).
 
 </details>
 
