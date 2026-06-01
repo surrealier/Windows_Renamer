@@ -417,8 +417,9 @@ ShowRenameDialog(paths := "") {
         remS := eRemStart.Value, remE := eRemEnd.Value
         if (ValidateAffix(prefix, suffix, cbNum.Value ? true : false, (remS != "" || remE != "")) != "")
             return
+        opts := CurNumOpts()        ; read controls BEFORE destroying the GUI (else "control is destroyed")
         g.Destroy()
-        ShowResult(DoRename(paths, prefix, suffix, CurNumOpts(), remS, remE))
+        ShowResult(DoRename(paths, prefix, suffix, opts, remS, remE))
     }
 
     ePrefix.OnEvent "Change", UpdatePreview
