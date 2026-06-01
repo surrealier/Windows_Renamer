@@ -18,9 +18,12 @@ Persistent
 
 ;------------------------- startup / tray (auto-execute) ----------------------
 
-; Startup runs only when this file is the MAIN script — skipped when the file is
-; #Include'd elsewhere (e.g. from the test harness) so the functions stay reusable.
-if (A_LineFile = A_ScriptFullPath) {
+; Startup runs when this file is the MAIN script — run directly OR as the compiled
+; .exe — but is skipped when #Include'd elsewhere (e.g. the test harness), so the
+; functions stay reusable.  NOTE: in a compiled exe A_LineFile is "*#1" (an internal
+; token, not the path), so we MUST also check A_IsCompiled; otherwise the whole
+; startup block (tray menu, hotkey group, auto-startup) is silently skipped.
+if (A_IsCompiled || A_LineFile = A_ScriptFullPath) {
     ; Hotkey is live only when an Explorer window or the Desktop is the active
     ; window.  A window GROUP keeps the #HotIf fast-path optimizer happy (a single
     ; WinActive call), unlike an `or` of several WinActive calls.
@@ -39,6 +42,9 @@ if (A_LineFile = A_ScriptFullPath) {
     A_TrayMenu.Add("Exit", (*) => ExitApp())
 
     TrayTip "Select files in Explorer and press Alt+F2.", "win_rename is running"
+
+    if (A_IsCompiled)               ; the .exe self-registers to run with Windows (first run only)
+        AutoStartupOnce()
 }
 
 
@@ -410,6 +416,22 @@ ShowRenameDialog(paths := "") {
 
 ;============================ startup install ==================================
 StartupLinkPath() => A_Startup "\win_rename.lnk"
+
+; When launched as the compiled .exe, register to start with Windows — but only
+; ONCE (tracked by a registry marker), so a later "Remove from Startup" stays removed.
+AutoStartupOnce() {
+    key := "HKCU\Software\win_rename"
+    init := "0"
+    try init := RegRead(key, "AutoStartInit", "0")
+    if (init = "1")
+        return
+    try {
+        if !FileExist(StartupLinkPath())
+            FileCreateShortcut(A_ScriptFullPath, StartupLinkPath(), A_ScriptDir, , "win_rename file renamer")
+        RegWrite("1", "REG_SZ", key, "AutoStartInit")
+        TrayTip "win_rename will now start with Windows.`n(Disable any time via tray → Remove from Startup.)", "Added to startup"
+    }
+}
 
 InstallStartup(*) {
     try {

@@ -17,7 +17,7 @@ No cloud. No telemetry. No 200 MB installer. Just one tiny tray app. 🪶
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?logo=windows&logoColor=white" alt="Platform">
   <img src="https://img.shields.io/badge/built%20with-AutoHotkey%20v2-5b5b5b?logo=autohotkey&logoColor=white" alt="AutoHotkey v2">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-32%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-41%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/PRs-welcome-ff69b4" alt="PRs welcome">
 </p>
 
@@ -154,7 +154,7 @@ Case-only renames (`a.txt → A.txt`) and cyclic swaps are handled via temporary
 
 <br>
 
-`test_win_rename.ahk` ships 32 automated tests (name transform, validation, on-disk rename engine, collisions, partial-failure isolation):
+`test_win_rename.ahk` ships 41 automated tests (name transform, validation, counter, on-disk rename engine, collisions, partial-failure isolation):
 
 ```powershell
 & "$env:LOCALAPPDATA\Programs\AutoHotkey\v2\AutoHotkey64.exe" test_win_rename.ahk
@@ -165,9 +165,9 @@ Case-only renames (`a.txt → A.txt`) and cyclic swaps are handled via temporary
 
 ---
 
-## ▶️ Start with Windows (optional)
+## ▶️ Start with Windows
 
-Tray icon → **Add to Startup**. Done. (Undo with **Remove from Startup**.)
+The **`.exe` auto-registers on its first run**, so it starts with Windows out of the box. Toggle it any time from the tray icon → **Add / Remove from Startup** (your choice is remembered).
 
 ---
 
