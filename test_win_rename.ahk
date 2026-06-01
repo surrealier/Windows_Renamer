@@ -110,6 +110,20 @@ Main() {
     AssertTrue("dorename remove: PRE_ stripped",  FileExist(T "\keep.txt") != "")
     AssertTrue("dorename remove: old name gone",  FileExist(rmp) = "")
 
+    ; ---- 9) wildcard remove from end (e.g. _v* -> strips _v1, _v2, _v10 …) ----
+    Assert("wild: _v* strips _v2",          BuildNewName("C:\x\photo_v2.jpg", "", "", "", "", "_v*", true), "photo.jpg")
+    Assert("wild: _v* strips _v10",         BuildNewName("C:\x\report_v10.pdf", "", "", "", "", "_v*", true), "report.pdf")
+    Assert("wild: _v* no match -> no-op",   BuildNewName("C:\x\plain.txt", "", "", "", "", "_v*", true), "plain.txt")
+    Assert("wild OFF: _v* is literal",      BuildNewName("C:\x\photo_v2.jpg", "", "", "", "", "_v*", false), "photo_v2.jpg")
+    Assert("wild: case-insensitive (_V3)",  BuildNewName("C:\x\clip_V3.mp4", "", "", "", "", "_v*", true), "clip.mp4")
+    Assert("wild: keeps ext + adds prefix", BuildNewName("C:\x\img_v5.PNG", "new_", "", "", "", "_v*", true), "new_img.PNG")
+    rwp1 := Mk(T, "verA_v1.txt")
+    rwp2 := Mk(T, "verB_v22.txt")
+    rwr := DoRename([rwp1, rwp2], "", "", "", "", "_v*", true)
+    AssertTrue("dorename wild: 2 renamed",        rwr.done = 2)
+    AssertTrue("dorename wild: verA.txt exists",   FileExist(T "\verA.txt") != "")
+    AssertTrue("dorename wild: verB.txt exists",   FileExist(T "\verB.txt") != "")
+
   } catch as e {
         RES := RES . "`n!!! EXCEPTION: " . e.Message
         RES := RES . "`n    What: " . (e.HasProp("What") ? e.What : "?")

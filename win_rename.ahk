@@ -121,7 +121,7 @@ GetSelectedPaths() {
 ; New BASE name (no directory).  Pipeline on the stem (name minus extension):
 ;   strip remStart / remEnd if present  ->  add prefix + suffix + counter.
 ; Suffix and counter go before the extension; the extension is preserved.
-BuildNewName(path, prefix, suffix, numStr := "", remStart := "", remEnd := "") {
+BuildNewName(path, prefix, suffix, numStr := "", remStart := "", remEnd := "", remWild := false) {
     SplitPath(path, &name, &dir, &ext, &nameNoExt)
     isFolder := InStr(FileExist(path), "D") ? true : false
 
@@ -136,19 +136,48 @@ BuildNewName(path, prefix, suffix, numStr := "", remStart := "", remEnd := "") {
         stem := nameNoExt
     }
 
-    ; remove: strip a leading / trailing string if present (case-insensitive match)
+    ; remove: strip a leading string (literal) and a trailing string from the stem.
+    ; When remWild is true, remEnd is a wildcard pattern where '*' matches any chars
+    ; (e.g. "_v*" strips "_v1", "_v2", …).  Matching is case-insensitive.
     if (remStart != "" && SubStr(stem, 1, StrLen(remStart)) = remStart)
         stem := SubStr(stem, StrLen(remStart) + 1)
-    if (remEnd != "" && StrLen(stem) >= StrLen(remEnd) && SubStr(stem, StrLen(stem) - StrLen(remEnd) + 1) = remEnd)
-        stem := SubStr(stem, 1, StrLen(stem) - StrLen(remEnd))
+    if (remEnd != "")
+        stem := StripEnd(stem, remEnd, remWild)
 
     newStem := prefix . stem . suffix . numStr
     return (ext = "") ? newStem : newStem "." ext
 }
 
-BuildNewPath(path, prefix, suffix, numStr := "", remStart := "", remEnd := "") {
+BuildNewPath(path, prefix, suffix, numStr := "", remStart := "", remEnd := "", remWild := false) {
     SplitPath(path, &name, &dir)
-    return dir "\" BuildNewName(path, prefix, suffix, numStr, remStart, remEnd)
+    return dir "\" BuildNewName(path, prefix, suffix, numStr, remStart, remEnd, remWild)
+}
+
+; Strip a trailing match from stem.  wild=false: literal suffix.  wild=true: '*'=any chars.
+StripEnd(stem, pat, wild) {
+    if (wild) {
+        if RegExMatch(stem, "i)" WildToRegex(pat) "$", &m)
+            return SubStr(stem, 1, StrLen(stem) - StrLen(m[0]))
+        return stem
+    }
+    if (StrLen(stem) >= StrLen(pat) && SubStr(stem, StrLen(stem) - StrLen(pat) + 1) = pat)
+        return SubStr(stem, 1, StrLen(stem) - StrLen(pat))
+    return stem
+}
+
+; Convert a wildcard pattern ('*' = any run of chars) to a regex, escaping the rest.
+WildToRegex(p) {
+    out := ""
+    Loop Parse p {
+        c := A_LoopField
+        if (c = "*")
+            out .= ".*"
+        else if InStr("\.*?+[]{}()^$|", c)
+            out .= "\" c
+        else
+            out .= c
+    }
+    return out
 }
 
 ; numOpts: "" -> no counter.  {digits, start} -> zero-padded counter for a 1-based index.
@@ -188,7 +217,7 @@ ValidateResultName(name) {
 
 
 ;============================ rename engine ===================================
-DoRename(paths, prefix, suffix, numOpts := "", remStart := "", remEnd := "") {
+DoRename(paths, prefix, suffix, numOpts := "", remStart := "", remEnd := "", remWild := false) {
     plan         := []          ; [{src, dst, isDir, caseOnly}]
     skipped      := []          ; [{src, reason}]
     targetsLower := Map()       ; lower(dst) -> src   (duplicate-target detection)
@@ -205,14 +234,14 @@ DoRename(paths, prefix, suffix, numOpts := "", remStart := "", remEnd := "") {
         }
         isDir   := InStr(FileExist(src), "D") ? true : false
         numStr  := NumStrFor(numOpts, i)
-        newName := BuildNewName(src, prefix, suffix, numStr, remStart, remEnd)
+        newName := BuildNewName(src, prefix, suffix, numStr, remStart, remEnd, remWild)
 
         if (rsn := ValidateResultName(newName)) {
             skipped.Push({src: src, reason: rsn})
             continue
         }
 
-        dst    := BuildNewPath(src, prefix, suffix, numStr, remStart, remEnd)
+        dst    := BuildNewPath(src, prefix, suffix, numStr, remStart, remEnd, remWild)
         keyDst := StrLower(dst), keySrc := StrLower(src)
 
         if (dst = src) {
@@ -364,6 +393,7 @@ ShowRenameDialog(paths := "") {
     eRemStart := g.AddEdit("xm w330")
     g.AddText "xm", "Remove from end (before extension):"
     eRemEnd := g.AddEdit("xm w330")
+    cbWild := g.AddCheckbox("xm", "Use * as a wildcard above  (e.g. _v* removes _v1, _v2, _v3 …)")
 
     ; --- optional auto-increment counter (e.g. photo_00001.jpg) ---
     cbNum := g.AddCheckbox("xm y+12", "Add a counter before the extension  (e.g. photo_00001.jpg)")
@@ -390,7 +420,7 @@ ShowRenameDialog(paths := "") {
 
     UpdatePreview(*) {
         prefix := ePrefix.Value, suffix := eSuffix.Value
-        remS := eRemStart.Value, remE := eRemEnd.Value
+        remS := eRemStart.Value, remE := eRemEnd.Value, remW := cbWild.Value ? true : false
         en := cbNum.Value ? true : false
         eDigits.Enabled := en, udDigits.Enabled := en
         eStart.Enabled := en, udStart.Enabled := en
@@ -398,7 +428,7 @@ ShowRenameDialog(paths := "") {
         lv.Opt("-Redraw")
         lv.Delete()
         for i, src in paths
-            lv.Add(, FileName(src), BuildNewName(src, prefix, suffix, NumStrFor(opts, i), remS, remE))
+            lv.Add(, FileName(src), BuildNewName(src, prefix, suffix, NumStrFor(opts, i), remS, remE, remW))
         lv.Opt("+Redraw")
         lv.ModifyCol()                  ; auto-fit columns to contents
 
@@ -414,18 +444,19 @@ ShowRenameDialog(paths := "") {
 
     ApplyNow(*) {
         prefix := ePrefix.Value, suffix := eSuffix.Value
-        remS := eRemStart.Value, remE := eRemEnd.Value
+        remS := eRemStart.Value, remE := eRemEnd.Value, remW := cbWild.Value ? true : false
         if (ValidateAffix(prefix, suffix, cbNum.Value ? true : false, (remS != "" || remE != "")) != "")
             return
         opts := CurNumOpts()        ; read controls BEFORE destroying the GUI (else "control is destroyed")
         g.Destroy()
-        ShowResult(DoRename(paths, prefix, suffix, opts, remS, remE))
+        ShowResult(DoRename(paths, prefix, suffix, opts, remS, remE, remW))
     }
 
     ePrefix.OnEvent "Change", UpdatePreview
     eSuffix.OnEvent "Change", UpdatePreview
     eRemStart.OnEvent "Change", UpdatePreview
     eRemEnd.OnEvent "Change", UpdatePreview
+    cbWild.OnEvent "Click", UpdatePreview
     cbNum.OnEvent "Click", UpdatePreview
     eDigits.OnEvent "Change", UpdatePreview
     udDigits.OnEvent "Change", UpdatePreview

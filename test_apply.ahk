@@ -23,7 +23,7 @@ ApplyTest() {
             ControlSend "TEST_", "Edit1", "win_rename"    ; prefix field
             Sleep 250
             SetTimer(CloseResultBox, 100)                 ; auto-dismiss the result MsgBox
-            ControlClick "Button2", "win_rename"          ; the Apply button
+            ControlClick "Apply", "win_rename"            ; the Apply button (by caption, robust to control order)
             Sleep 1200
             SetTimer(CloseResultBox, 0)
             r1 := (FileExist(T "\TEST_one.txt") != "")

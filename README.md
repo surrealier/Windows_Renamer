@@ -17,7 +17,7 @@ No cloud. No telemetry. No 200 MB installer. Just one tiny tray app. 🪶
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6?logo=windows&logoColor=white" alt="Platform">
   <img src="https://img.shields.io/badge/built%20with-AutoHotkey%20v2-5b5b5b?logo=autohotkey&logoColor=white" alt="AutoHotkey v2">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT">
-  <img src="https://img.shields.io/badge/tests-50%20passing-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-59%20passing-brightgreen" alt="Tests">
   <img src="https://img.shields.io/badge/PRs-welcome-ff69b4" alt="PRs welcome">
 </p>
 
@@ -83,7 +83,7 @@ Prefer the raw `.ahk`? You just need AutoHotkey v2 — a normal program installe
 ## 🧠 Features
 
 - 🏷️ **Prefix + suffix in one shot** — suffix lands *before* the extension
-- ✂️ **Remove text too** — strip a leading or trailing string (before the extension); remove + add run together, so you can re-prefix in one pass
+- ✂️ **Remove text** — strip a leading or trailing string before adding (re-prefix in one pass). Tick **“`*` wildcard”** and `_v*` auto-removes versioned suffixes like `_v1`, `_v2`, `_v3` …
 - 🔢 **Auto-increment counter** — append `00001`, `00002`, … before the extension; set the zero-padding & start number with the ▲▼ spinners
 - 👀 **Live preview** — see `old → new` for every file as you type
 - 🛡️ **Safe by default** — blocks illegal characters, never overwrites existing files, isolates per-file failures
@@ -155,7 +155,7 @@ Case-only renames (`a.txt → A.txt`) and cyclic swaps are handled via temporary
 
 <br>
 
-`test_win_rename.ahk` ships 50 automated tests (name transform, validation, counter, remove, on-disk rename engine, collisions, partial-failure isolation), and `test_apply.ahk` is a GUI integration test that clicks **Apply** and checks files are actually renamed:
+`test_win_rename.ahk` ships 59 automated tests (name transform, validation, counter, remove, `*` wildcard, on-disk rename engine, collisions, partial-failure isolation), and `test_apply.ahk` is a GUI integration test that clicks **Apply** and verifies an on-disk rename:
 
 ```powershell
 & "$env:LOCALAPPDATA\Programs\AutoHotkey\v2\AutoHotkey64.exe" test_win_rename.ahk
