@@ -56,12 +56,12 @@ photo.jpg    →   2024_photo_final.jpg
 
 > **TL;DR — download the exe, double-click, press `Alt`+`F2` in Explorer.**
 
-### ⚡ Option A — Download & run · *no install*
+### ⚡ Option A — Download & run · *Recommended*
 
-#### **1.** ⬇️ Grab **[`win_rename.exe`](https://github.com/surrealier/Windows_Renamer/releases/latest/download/win_rename.exe)** from the latest release
-#### **2.** Double-click it → it lives in your tray 🟢
-#### **3.** In Explorer, **select files** → press **`Alt`+`F2`**
-#### **4.** Type a **prefix / suffix**, check the preview, hit **Apply** ✅
+#### **1.** ⬇️ Just Install! **[`win_rename.exe`](https://github.com/surrealier/Windows_Renamer/releases/latest/download/win_rename.exe)**
+#### **2.** Just Execute!
+#### **3.** In Explorer, **select files** → **`Alt`+`F2`**
+#### **4.** Type a **prefix / suffix** → **Apply**
 
 *No AutoHotkey. No setup. Nothing to clone.*
 
@@ -93,9 +93,9 @@ Prefer the raw `.ahk`? You just need AutoHotkey v2 — a normal program installe
 
 ---
 
-## 🆚 vs. built-in `F2`
+## built-in `F2` vs Renamer `Alt+F2` 
 
-| | Windows `F2` | **win_rename** |
+| | built-in `F2` | **Renamer `Alt+F2`** |
 |---|---|---|
 | Keep original names | ❌ all become the same | ✅ |
 | Add prefix | ❌ | ✅ |
