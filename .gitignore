@@ -1,0 +1,18 @@
+# Compiled / packaged output
+*.exe
+*.zip
+
+# Temp files win_rename may create while renaming
+~winrename_*.tmp
+*.tmp
+*.bak
+
+# Windows shell cruft
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.code-workspace
