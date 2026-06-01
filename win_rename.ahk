@@ -311,8 +311,9 @@ ListSection(items, label) {
 
 
 ;================================ dialog ======================================
-ShowRenameDialog(*) {
-    paths := GetSelectedPaths()
+ShowRenameDialog(paths := "") {
+    if (!IsObject(paths))               ; hotkey calls with no arg -> read the live selection
+        paths := GetSelectedPaths()
     if (!paths.Length) {
         MsgBox "No files or folders are selected.`nSelect items in Explorer, then press Alt+F2.", "win_rename", "Icon!"
         return
