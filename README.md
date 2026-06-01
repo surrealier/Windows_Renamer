@@ -83,6 +83,7 @@ Prefer the raw `.ahk`? You just need AutoHotkey v2 — a normal program installe
 ## 🧠 Features
 
 - 🏷️ **Prefix + suffix in one shot** — suffix lands *before* the extension
+- ✂️ **Remove text too** — strip a leading or trailing string (before the extension); remove + add run together, so you can re-prefix in one pass
 - 🔢 **Auto-increment counter** — append `00001`, `00002`, … before the extension; set the zero-padding & start number with the ▲▼ spinners
 - 👀 **Live preview** — see `old → new` for every file as you type
 - 🛡️ **Safe by default** — blocks illegal characters, never overwrites existing files, isolates per-file failures
@@ -168,6 +169,10 @@ Case-only renames (`a.txt → A.txt`) and cyclic swaps are handled via temporary
 ## ▶️ Start with Windows
 
 The **`.exe` auto-registers on its first run**, so it starts with Windows out of the box. Toggle it any time from the tray icon → **Add / Remove from Startup** (your choice is remembered).
+
+## 🗑️ Uninstall
+
+It's portable, so cleanup is tiny. Run **`uninstall.bat`** (bundled in the release) — it stops the app, removes the startup shortcut + registry marker, and optionally deletes `win_rename.exe`. Prefer manual? Tray → **Remove from Startup** → **Exit**, then delete the file.
 
 ---
 

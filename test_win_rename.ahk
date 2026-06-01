@@ -97,6 +97,19 @@ Main() {
     AssertTrue("dorename+num: shot1 -> _0001",  FileExist(T "\shot1_0001.png") != "")
     AssertTrue("dorename+num: shot2 -> _0002",  FileExist(T "\shot2_0002.png") != "")
 
+    ; ---- 8) remove prefix/suffix ----
+    Assert("remove: strip leading prefix",    BuildNewName("C:\x\IMG_photo.jpg", "", "", "", "IMG_", ""), "photo.jpg")
+    Assert("remove: strip trailing suffix",   BuildNewName("C:\x\photo_copy.jpg", "", "", "", "", "_copy"), "photo.jpg")
+    Assert("remove: both ends + add prefix",  BuildNewName("C:\x\IMG_photo_old.png", "new_", "", "", "IMG_", "_old"), "new_photo.png")
+    Assert("remove: not present -> no-op",    BuildNewName("C:\x\report.pdf", "", "", "", "XYZ_", ""), "report.pdf")
+    Assert("remove: case-insensitive match",  BuildNewName("C:\x\img_a.txt", "", "", "", "IMG_", ""), "a.txt")
+    Assert("remove: extension preserved",     BuildNewName("C:\x\IMG_1234.JPEG", "", "", "", "IMG_", ""), "1234.JPEG")
+    rmp := Mk(T, "PRE_keep.txt")
+    rmr := DoRename([rmp], "", "", "", "PRE_", "")
+    AssertTrue("dorename remove: 1 renamed",      rmr.done = 1)
+    AssertTrue("dorename remove: PRE_ stripped",  FileExist(T "\keep.txt") != "")
+    AssertTrue("dorename remove: old name gone",  FileExist(rmp) = "")
+
   } catch as e {
         RES := RES . "`n!!! EXCEPTION: " . e.Message
         RES := RES . "`n    What: " . (e.HasProp("What") ? e.What : "?")

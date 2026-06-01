@@ -118,21 +118,37 @@ GetSelectedPaths() {
 
 
 ;============================ name transform ==================================
-; New BASE name (no directory).  Suffix and the optional counter go before the extension.
-BuildNewName(path, prefix, suffix, numStr := "") {
+; New BASE name (no directory).  Pipeline on the stem (name minus extension):
+;   strip remStart / remEnd if present  ->  add prefix + suffix + counter.
+; Suffix and counter go before the extension; the extension is preserved.
+BuildNewName(path, prefix, suffix, numStr := "", remStart := "", remEnd := "") {
     SplitPath(path, &name, &dir, &ext, &nameNoExt)
     isFolder := InStr(FileExist(path), "D") ? true : false
 
-    if (isFolder || ext = "")                       ; folder or extension-less file
-        return prefix . name . suffix . numStr
-    if (nameNoExt = "" && SubStr(name, 1, 1) = ".")  ; dotfile (.gitignore): whole name = "extension"
+    ; dotfile (.gitignore): whole name treated as the "extension"; affixes prepended
+    if (!isFolder && nameNoExt = "" && SubStr(name, 1, 1) = ".")
         return prefix . suffix . numStr . name
-    return prefix . nameNoExt . suffix . numStr . "." . ext  ; normal: suffix+counter before extension
+
+    if (isFolder || ext = "") {                     ; folder / extension-less file
+        stem := name
+        ext  := ""
+    } else {
+        stem := nameNoExt
+    }
+
+    ; remove: strip a leading / trailing string if present (case-insensitive match)
+    if (remStart != "" && SubStr(stem, 1, StrLen(remStart)) = remStart)
+        stem := SubStr(stem, StrLen(remStart) + 1)
+    if (remEnd != "" && StrLen(stem) >= StrLen(remEnd) && SubStr(stem, StrLen(stem) - StrLen(remEnd) + 1) = remEnd)
+        stem := SubStr(stem, 1, StrLen(stem) - StrLen(remEnd))
+
+    newStem := prefix . stem . suffix . numStr
+    return (ext = "") ? newStem : newStem "." ext
 }
 
-BuildNewPath(path, prefix, suffix, numStr := "") {
+BuildNewPath(path, prefix, suffix, numStr := "", remStart := "", remEnd := "") {
     SplitPath(path, &name, &dir)
-    return dir "\" BuildNewName(path, prefix, suffix, numStr)
+    return dir "\" BuildNewName(path, prefix, suffix, numStr, remStart, remEnd)
 }
 
 ; numOpts: "" -> no counter.  {digits, start} -> zero-padded counter for a 1-based index.
@@ -145,9 +161,9 @@ NumStrFor(numOpts, index) {
 
 ;============================ validation ======================================
 ; Characters illegal in Windows filenames (also blocks FileMove '*'/'?' wildcards).
-ValidateAffix(prefix, suffix, hasNum := false) {
-    if (prefix = "" && suffix = "" && !hasNum)
-        return "Enter a prefix, a suffix, or enable the counter."
+ValidateAffix(prefix, suffix, hasNum := false, hasRemove := false) {
+    if (prefix = "" && suffix = "" && !hasNum && !hasRemove)
+        return "Enter something to add or remove."
     if RegExMatch(prefix suffix, "[\\/:*?`"<>|]")
         return "Illegal characters not allowed:  \ / : * ? `" < > |"
     return ""
@@ -172,7 +188,7 @@ ValidateResultName(name) {
 
 
 ;============================ rename engine ===================================
-DoRename(paths, prefix, suffix, numOpts := "") {
+DoRename(paths, prefix, suffix, numOpts := "", remStart := "", remEnd := "") {
     plan         := []          ; [{src, dst, isDir, caseOnly}]
     skipped      := []          ; [{src, reason}]
     targetsLower := Map()       ; lower(dst) -> src   (duplicate-target detection)
@@ -189,14 +205,14 @@ DoRename(paths, prefix, suffix, numOpts := "") {
         }
         isDir   := InStr(FileExist(src), "D") ? true : false
         numStr  := NumStrFor(numOpts, i)
-        newName := BuildNewName(src, prefix, suffix, numStr)
+        newName := BuildNewName(src, prefix, suffix, numStr, remStart, remEnd)
 
         if (rsn := ValidateResultName(newName)) {
             skipped.Push({src: src, reason: rsn})
             continue
         }
 
-        dst    := BuildNewPath(src, prefix, suffix, numStr)
+        dst    := BuildNewPath(src, prefix, suffix, numStr, remStart, remEnd)
         keyDst := StrLower(dst), keySrc := StrLower(src)
 
         if (dst = src) {
@@ -337,10 +353,17 @@ ShowRenameDialog(paths := "") {
     g.SetFont "s10", "Segoe UI"
     g.MarginX := 12, g.MarginY := 10
 
-    g.AddText "xm", "Prefix:"
-    ePrefix := g.AddEdit("xm w320")
-    g.AddText "xm", "Suffix (before extension):"
-    eSuffix := g.AddEdit("xm w320")
+    ; --- add ---
+    g.AddText "xm", "Prefix — add to start:"
+    ePrefix := g.AddEdit("xm w330")
+    g.AddText "xm", "Suffix — add before extension:"
+    eSuffix := g.AddEdit("xm w330")
+
+    ; --- remove (stripped BEFORE the prefix/suffix are added; case-insensitive) ---
+    g.AddText "xm", "Remove from start:"
+    eRemStart := g.AddEdit("xm w330")
+    g.AddText "xm", "Remove from end (before extension):"
+    eRemEnd := g.AddEdit("xm w330")
 
     ; --- optional auto-increment counter (e.g. photo_00001.jpg) ---
     cbNum := g.AddCheckbox("xm y+12", "Add a counter before the extension  (e.g. photo_00001.jpg)")
@@ -351,7 +374,7 @@ ShowRenameDialog(paths := "") {
     eStart := g.AddEdit("x+8 yp-4 w85")
     udStart := g.AddUpDown("Range0-9999999", 1)
 
-    lv := g.AddListView("xm y+12 w560 r14 Grid -Multi", ["Original name", "New name"])
+    lv := g.AddListView("xm y+12 w560 r12 Grid -Multi", ["Original name", "New name"])
 
     status := g.AddText("xm w560", "")
 
@@ -367,6 +390,7 @@ ShowRenameDialog(paths := "") {
 
     UpdatePreview(*) {
         prefix := ePrefix.Value, suffix := eSuffix.Value
+        remS := eRemStart.Value, remE := eRemEnd.Value
         en := cbNum.Value ? true : false
         eDigits.Enabled := en, udDigits.Enabled := en
         eStart.Enabled := en, udStart.Enabled := en
@@ -374,11 +398,11 @@ ShowRenameDialog(paths := "") {
         lv.Opt("-Redraw")
         lv.Delete()
         for i, src in paths
-            lv.Add(, FileName(src), BuildNewName(src, prefix, suffix, NumStrFor(opts, i)))
+            lv.Add(, FileName(src), BuildNewName(src, prefix, suffix, NumStrFor(opts, i), remS, remE))
         lv.Opt("+Redraw")
         lv.ModifyCol()                  ; auto-fit columns to contents
 
-        err := ValidateAffix(prefix, suffix, en)
+        err := ValidateAffix(prefix, suffix, en, (remS != "" || remE != ""))
         if (err = "") {
             status.Text := "✓ Ready — " paths.Length " item(s) will be renamed."
             btnApply.Enabled := true
@@ -390,14 +414,17 @@ ShowRenameDialog(paths := "") {
 
     ApplyNow(*) {
         prefix := ePrefix.Value, suffix := eSuffix.Value
-        if (ValidateAffix(prefix, suffix, cbNum.Value ? true : false) != "")
+        remS := eRemStart.Value, remE := eRemEnd.Value
+        if (ValidateAffix(prefix, suffix, cbNum.Value ? true : false, (remS != "" || remE != "")) != "")
             return
         g.Destroy()
-        ShowResult(DoRename(paths, prefix, suffix, CurNumOpts()))
+        ShowResult(DoRename(paths, prefix, suffix, CurNumOpts(), remS, remE))
     }
 
     ePrefix.OnEvent "Change", UpdatePreview
     eSuffix.OnEvent "Change", UpdatePreview
+    eRemStart.OnEvent "Change", UpdatePreview
+    eRemEnd.OnEvent "Change", UpdatePreview
     cbNum.OnEvent "Click", UpdatePreview
     eDigits.OnEvent "Change", UpdatePreview
     udDigits.OnEvent "Change", UpdatePreview
