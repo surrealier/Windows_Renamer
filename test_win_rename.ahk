@@ -83,6 +83,20 @@ Main() {
     AssertTrue("partial-fail: locked file not renamed", FileExist(lockedFile) != "")
     AssertTrue("partial-fail: failure recorded",       dr3.failed.Length >= 1)
 
+    ; ---- 7) counter (auto-increment number before the extension) ----
+    Assert("number: appended after suffix",  BuildNewName("C:\x\file.png", "", "_", "00001"), "file_00001.png")
+    Assert("number: no suffix text",         BuildNewName("C:\x\photo.jpg", "", "", "042"), "photo042.jpg")
+    Assert("number: with prefix and suffix", BuildNewName("C:\x\a.txt", "p_", "_s", "007"), "p_a_s007.txt")
+    Assert("number: format 5-digit",         NumStrFor({digits:5, start:1}, 1), "00001")
+    Assert("number: start offset",           NumStrFor({digits:3, start:10}, 5), "014")
+    Assert("number: opts empty -> no str",   NumStrFor("", 3), "")
+    ndp1 := Mk(T, "shot1.png")
+    ndp2 := Mk(T, "shot2.png")
+    ndr := DoRename([ndp1, ndp2], "", "_", {digits:4, start:1})
+    AssertTrue("dorename+num: 2 renamed",       ndr.done = 2)
+    AssertTrue("dorename+num: shot1 -> _0001",  FileExist(T "\shot1_0001.png") != "")
+    AssertTrue("dorename+num: shot2 -> _0002",  FileExist(T "\shot2_0002.png") != "")
+
   } catch as e {
         RES := RES . "`n!!! EXCEPTION: " . e.Message
         RES := RES . "`n    What: " . (e.HasProp("What") ? e.What : "?")

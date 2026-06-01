@@ -112,29 +112,36 @@ GetSelectedPaths() {
 
 
 ;============================ name transform ==================================
-; New BASE name (no directory).  Suffix goes before the extension.
-BuildNewName(path, prefix, suffix) {
+; New BASE name (no directory).  Suffix and the optional counter go before the extension.
+BuildNewName(path, prefix, suffix, numStr := "") {
     SplitPath(path, &name, &dir, &ext, &nameNoExt)
     isFolder := InStr(FileExist(path), "D") ? true : false
 
     if (isFolder || ext = "")                       ; folder or extension-less file
-        return prefix . name . suffix
+        return prefix . name . suffix . numStr
     if (nameNoExt = "" && SubStr(name, 1, 1) = ".")  ; dotfile (.gitignore): whole name = "extension"
-        return prefix . suffix . name
-    return prefix . nameNoExt . suffix . "." . ext  ; normal: suffix before extension
+        return prefix . suffix . numStr . name
+    return prefix . nameNoExt . suffix . numStr . "." . ext  ; normal: suffix+counter before extension
 }
 
-BuildNewPath(path, prefix, suffix) {
+BuildNewPath(path, prefix, suffix, numStr := "") {
     SplitPath(path, &name, &dir)
-    return dir "\" BuildNewName(path, prefix, suffix)
+    return dir "\" BuildNewName(path, prefix, suffix, numStr)
+}
+
+; numOpts: "" -> no counter.  {digits, start} -> zero-padded counter for a 1-based index.
+NumStrFor(numOpts, index) {
+    if (!numOpts)
+        return ""
+    return Format("{:0" numOpts.digits "d}", numOpts.start + index - 1)
 }
 
 
 ;============================ validation ======================================
 ; Characters illegal in Windows filenames (also blocks FileMove '*'/'?' wildcards).
-ValidateAffix(prefix, suffix) {
-    if (prefix = "" && suffix = "")
-        return "Enter a prefix or a suffix."
+ValidateAffix(prefix, suffix, hasNum := false) {
+    if (prefix = "" && suffix = "" && !hasNum)
+        return "Enter a prefix, a suffix, or enable the counter."
     if RegExMatch(prefix suffix, "[\\/:*?`"<>|]")
         return "Illegal characters not allowed:  \ / : * ? `" < > |"
     return ""
@@ -159,7 +166,7 @@ ValidateResultName(name) {
 
 
 ;============================ rename engine ===================================
-DoRename(paths, prefix, suffix) {
+DoRename(paths, prefix, suffix, numOpts := "") {
     plan         := []          ; [{src, dst, isDir, caseOnly}]
     skipped      := []          ; [{src, reason}]
     targetsLower := Map()       ; lower(dst) -> src   (duplicate-target detection)
@@ -169,20 +176,21 @@ DoRename(paths, prefix, suffix) {
         sourcesLower[StrLower(src)] := true
 
     ; ---- pre-scan: build plan, detect collisions ----
-    for src in paths {
+    for i, src in paths {
         if !FileExist(src) {
             skipped.Push({src: src, reason: "source not found"})
             continue
         }
         isDir   := InStr(FileExist(src), "D") ? true : false
-        newName := BuildNewName(src, prefix, suffix)
+        numStr  := NumStrFor(numOpts, i)
+        newName := BuildNewName(src, prefix, suffix, numStr)
 
         if (rsn := ValidateResultName(newName)) {
             skipped.Push({src: src, reason: rsn})
             continue
         }
 
-        dst    := BuildNewPath(src, prefix, suffix)
+        dst    := BuildNewPath(src, prefix, suffix, numStr)
         keyDst := StrLower(dst), keySrc := StrLower(src)
 
         if (dst = src) {
@@ -328,23 +336,43 @@ ShowRenameDialog(paths := "") {
     g.AddText "xm", "Suffix (before extension):"
     eSuffix := g.AddEdit("xm w320")
 
-    lv := g.AddListView("xm w560 r14 Grid -Multi", ["Original name", "New name"])
+    ; --- optional auto-increment counter (e.g. photo_00001.jpg) ---
+    cbNum := g.AddCheckbox("xm y+12", "Add a counter before the extension  (e.g. photo_00001.jpg)")
+    g.AddText("xm y+8", "Digits:")
+    eDigits := g.AddEdit("x+8 yp-4 w55")
+    udDigits := g.AddUpDown("Range1-12", 5)
+    g.AddText("x+30 yp+4", "Start at:")
+    eStart := g.AddEdit("x+8 yp-4 w85")
+    udStart := g.AddUpDown("Range0-9999999", 1)
+
+    lv := g.AddListView("xm y+12 w560 r14 Grid -Multi", ["Original name", "New name"])
 
     status := g.AddText("xm w560", "")
 
     btnApply  := g.AddButton("xm w130 Default", "Apply")
     btnCancel := g.AddButton("x+12 w130", "Cancel")
 
+    CurNumOpts() {                      ; "" when the counter is off; else {digits, start}
+        if (!cbNum.Value)
+            return ""
+        d := udDigits.Value
+        return { digits: (d < 1 ? 1 : d), start: udStart.Value }
+    }
+
     UpdatePreview(*) {
         prefix := ePrefix.Value, suffix := eSuffix.Value
+        en := cbNum.Value ? true : false
+        eDigits.Enabled := en, udDigits.Enabled := en
+        eStart.Enabled := en, udStart.Enabled := en
+        opts := CurNumOpts()
         lv.Opt("-Redraw")
         lv.Delete()
-        for src in paths
-            lv.Add(, FileName(src), BuildNewName(src, prefix, suffix))
+        for i, src in paths
+            lv.Add(, FileName(src), BuildNewName(src, prefix, suffix, NumStrFor(opts, i)))
         lv.Opt("+Redraw")
         lv.ModifyCol()                  ; auto-fit columns to contents
 
-        err := ValidateAffix(prefix, suffix)
+        err := ValidateAffix(prefix, suffix, en)
         if (err = "") {
             status.Text := "✓ Ready — " paths.Length " item(s) will be renamed."
             btnApply.Enabled := true
@@ -356,14 +384,19 @@ ShowRenameDialog(paths := "") {
 
     ApplyNow(*) {
         prefix := ePrefix.Value, suffix := eSuffix.Value
-        if (ValidateAffix(prefix, suffix) != "")
+        if (ValidateAffix(prefix, suffix, cbNum.Value ? true : false) != "")
             return
         g.Destroy()
-        ShowResult(DoRename(paths, prefix, suffix))
+        ShowResult(DoRename(paths, prefix, suffix, CurNumOpts()))
     }
 
     ePrefix.OnEvent "Change", UpdatePreview
     eSuffix.OnEvent "Change", UpdatePreview
+    cbNum.OnEvent "Click", UpdatePreview
+    eDigits.OnEvent "Change", UpdatePreview
+    udDigits.OnEvent "Change", UpdatePreview
+    eStart.OnEvent "Change", UpdatePreview
+    udStart.OnEvent "Change", UpdatePreview
     btnApply.OnEvent "Click", ApplyNow
     btnCancel.OnEvent "Click", (*) => g.Destroy()
     g.OnEvent "Escape", (*) => g.Destroy()

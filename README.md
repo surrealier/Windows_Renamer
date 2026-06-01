@@ -83,6 +83,7 @@ Prefer the raw `.ahk`? You just need AutoHotkey v2 — a normal program installe
 ## 🧠 Features
 
 - 🏷️ **Prefix + suffix in one shot** — suffix lands *before* the extension
+- 🔢 **Auto-increment counter** — append `00001`, `00002`, … before the extension; set the zero-padding & start number with the ▲▼ spinners
 - 👀 **Live preview** — see `old → new` for every file as you type
 - 🛡️ **Safe by default** — blocks illegal characters, never overwrites existing files, isolates per-file failures
 - 🪟 **Windows 11 tab-aware** — reads the selection from the *active* Explorer tab, not a random one
@@ -172,7 +173,7 @@ Tray icon → **Add to Startup**. Done. (Undo with **Remove from Startup**.)
 
 ## 🤝 Contributing
 
-Issues and PRs welcome! Ideas: numbering, find & replace, case conversion, regex mode.
+Issues and PRs welcome! Ideas: find & replace, case conversion, regex mode, drag-to-reorder.
 
 ## ⭐ Like it?
 
